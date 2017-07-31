@@ -14,6 +14,7 @@ setup(
         'requests',
         'gdata',
         'pandas',
+        'Quandl',
         ],
     entry_points = {
         'console_scripts': [

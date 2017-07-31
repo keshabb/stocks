@@ -8,22 +8,10 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import click
 
-TICKER='EXTR'
-SUMMARY = 'https://finance.yahoo.com/quote/{}'.format(TICKER)
-STATS = 'https://finance.yahoo.com/quote/{}/key-statistics?p={}'.format(TICKER, TICKER)
-PROFILE = 'https://finance.yahoo.com/quote/{}/profile?p={}'.format(TICKER, TICKER)
-FINANCIALS = 'https://finance.yahoo.com/quote/{}/financials?p={}'.format(TICKER, TICKER)
-BALANCE_SHEET = 'https://finance.yahoo.com/quote/{}/balance-sheet?p={}'.format(TICKER, TICKER)
-CASH_FLOW = 'https://finance.yahoo.com/quote/{}/cash-flow?p={}'.format(TICKER, TICKER)
-OPTIONS = 'https://finance.yahoo.com/quote/{}/options?p={}'.format(TICKER, TICKER)
-HOLDERS = 'https://finance.yahoo.com/quote/{}/holders?p={}'.format(TICKER, TICKER)
-HISTORY = 'https://finance.yahoo.com/quote/{}/history?p={}'.format(TICKER, TICKER)
-ANALYSTS = 'https://finance.yahoo.com/quote/{}/analysts?p={}'.format(TICKER, TICKER)
-
 
 def get_summary(ticker):
     """ Get summary data of Ticker """
-
+    SUMMARY = 'https://finance.yahoo.com/quote/{}'.format(ticker)
     page = requests.get(SUMMARY)
     soup = BeautifulSoup(page.content, 'html.parser')
     data = soup.find_all('tr')
@@ -31,13 +19,14 @@ def get_summary(ticker):
     for item in data:
         if item('td')[0].get_text() == '':
             continue
-        print "{}: {}".format(item('td')[0].get_text(), item('td')[1].get_text())
+#        print "{}: {}".format(item('td')[0].get_text(), item('td')[1].get_text())
         summary.update({item('td')[0].get_text(): item('td')[1].get_text()})
-        print "Summary: {}".format(summary)
+    print "Summary: {}".format(summary)
 
 def get_stats(ticker):
     """ Get statistics of ticker """
 
+    STATS = 'https://finance.yahoo.com/quote/{}/key-statistics?p={}'.format(ticker, ticker)
     page = requests.get(STATS)
     soup = BeautifulSoup(page.content, 'html.parser')
     data = soup.find_all('tr')
@@ -47,20 +36,28 @@ def get_stats(ticker):
 
 def get_profile(ticker):
     """ get company profile data """
+    PROFILE = 'https://finance.yahoo.com/quote/{}/profile?p={}'.format(ticker, ticker)
 
     page = requests.get(PROFILE)
     soup = BeautifulSoup(page.content, 'html.parser')
+    company_name = soup.find('h3', attrs={'class': "Mb(10px)"})
+    if company_name is not None:
+        print company_name.get_text().encode('utf-8')
+        company_info = soup.find_all('div', attrs={'class': "Mb(35px)"})
+        for d in company_info:
+            print d.get_text()
     data = soup.find_all('tr')
     for item in data:
         if not item('td') or item('td')[0].get_text() == '':
             continue
-        print "Name: {}, Title: {}, Pay: {}, Age: {}".format(item('td')[0].get_text(), 
-              item('td')[1].get_text(), item('td')[2].get_text(), item('td')[4].get_text())
+        print "Name: {}, Title: {}, Pay: {}, Age: {}".format(item('td')[0].get_text().encode('utf-8'), 
+              item('td')[1].get_text().encode('utf-8'), item('td')[2].get_text().encode('utf-8'), item('td')[4].get_text().encode('utf-8'))
 
 
 def get_financials(ticker):
     """ Get financial data """
 
+    FINANCIALS = 'https://finance.yahoo.com/quote/{}/financials?p={}'.format(ticker, ticker)
     page = requests.get(FINANCIALS)
     soup = BeautifulSoup(page.content, 'html.parser')
  #   data = soup.find_all('tr')
@@ -96,7 +93,7 @@ def get_financials(ticker):
 
 def get_balance_sheets(ticker):
     """ Get balance sheets """
-
+    BALANCE_SHEET = 'https://finance.yahoo.com/quote/{}/balance-sheet?p={}'.format(ticker, ticker)
     page = requests.get(BALANCE_SHEET)
     soup = BeautifulSoup(page.content, 'html.parser')
     balance_sheet = soup.find_all('h3', attrs={'class': "D(ib) Fz(20px) Fw(b)"})
@@ -115,7 +112,7 @@ def get_balance_sheets(ticker):
 
 def get_cash_flow(ticker):
     """ Get cash flow """
-
+    CASH_FLOW = 'https://finance.yahoo.com/quote/{}/cash-flow?p={}'.format(ticker, ticker)
     page = requests.get(CASH_FLOW)
     soup = BeautifulSoup(page.content, 'html.parser')
     cashflow = soup.find_all('h3', attrs={'class': "D(ib) Fz(20px) Fw(b)"})
@@ -134,6 +131,7 @@ def get_cash_flow(ticker):
 
 def get_options(ticker):
     """ Get options data """
+    OPTIONS = 'https://finance.yahoo.com/quote/{}/options?p={}'.format(ticker, ticker)
 
     page = requests.get(OPTIONS)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -162,7 +160,7 @@ def get_options(ticker):
 def get_holders(ticker):
     """ Get holders info """
     # More work not working
-
+    HOLDERS = 'https://finance.yahoo.com/quote/{}/holders?p={}'.format(ticker, ticker)
     page = requests.get(HOLDERS)
     soup = BeautifulSoup(page.content, 'html.parser')
     holders = soup.find_all('h3', attrs={'class': "D(ib)"})
@@ -184,7 +182,7 @@ def get_holders(ticker):
 
 def get_history(ticker):
     """ Get history """
-
+    HISTORY = 'https://finance.yahoo.com/quote/{}/history?p={}'.format(ticker, ticker)
     data = []
     page = requests.get(HISTORY)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -208,6 +206,7 @@ def get_history(ticker):
 def get_analysts(ticker):
     """ Get analyst info """
     # More work to do for analysts rating and average price for stock
+    ANALYSTS = 'https://finance.yahoo.com/quote/{}/analysts?p={}'.format(ticker, ticker)
     page = requests.get(ANALYSTS)
     soup = BeautifulSoup(page.content, 'html.parser')
     tables = soup.find_all('table')
