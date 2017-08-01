@@ -19,9 +19,11 @@ def get_summary(ticker):
     for item in data:
         if item('td')[0].get_text() == '':
             continue
-#        print "{}: {}".format(item('td')[0].get_text(), item('td')[1].get_text())
         summary.update({item('td')[0].get_text(): item('td')[1].get_text()})
-    print "Summary: {}".format(summary)
+    df = pd.Series(summary)
+    click.echo(click.style("Summary", fg='red', bold=True, underline=True))
+    click.echo("{}".format(df))
+
 
 def get_stats(ticker):
     """ Get statistics of ticker """
@@ -225,16 +227,16 @@ def get_analysts(ticker):
 @click.command()
 @click.argument('symbol', nargs=1)
 def get_info_yahoo(symbol):
-    get_summary(symbol)
+    #get_summary(symbol)
     get_stats(symbol)
-    get_profile(symbol)
-    get_financials(symbol)
-    get_balance_sheets(symbol)
-    get_cash_flow(symbol)
-    get_options(symbol)
+    #get_profile(symbol)
+    #get_financials(symbol)
+    #get_balance_sheets(symbol)
+    #get_cash_flow(symbol)
+    #get_options(symbol)
     #get_holders(symbol)
-    get_history(symbol)
-    get_analysts(symbol)
+    #get_history(symbol)
+    #get_analysts(symbol)
 
 
 if __name__ == '__main__':
