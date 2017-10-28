@@ -104,8 +104,10 @@ def get_stock_info(ticker, days=None):
                 click.echo("High: {}, Low: {}, P/E: {}, EPS: {}, SMA15: {},"
                            "SMA30: {}, SMA60: {}, SMA200: {}".
                             format(max(close_price_list), min(close_price_list),
-                                   api_client.PE_Ratio, api_client.eps, sma_15[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA'],
-                                   sma_30[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA'], sma_60[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA'], sma_200[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']))
+                            #       api_client.PE_Ratio, api_client.eps, sma_15[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA'],
+                            #       sma_30[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA'], sma_60[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA'], sma_200[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']))
+                                   api_client.PE_Ratio, api_client.eps, sma_15,
+                                   sma_30, sma_60, sma_200))
                 return True
             fluctuate = float(v['2. high']) - float(v['3. low'])
             try:
@@ -136,8 +138,8 @@ def get_stock_info(ticker, days=None):
 def ticker_15_sma(ticker, trade_date):
     sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=15&series_type=close&apikey={}'.format(ticker, API_KEY)
     resp = requests.get(sma_url)
-    if resp:
-        return resp.json()['Technical Analysis: SMA']
+    if resp.json()['Technical Analysis: SMA']:
+        return resp.json()['Technical Analysis: SMA'][datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']
     else:
         return 0
 
@@ -145,24 +147,24 @@ def ticker_15_sma(ticker, trade_date):
 def ticker_30_sma(ticker, trade_date):
     sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=30&series_type=close&apikey={}'.format(ticker, API_KEY)
     resp = requests.get(sma_url)
-    if resp:
-        return resp.json()['Technical Analysis: SMA']
+    if resp.json()['Technical Analysis: SMA']:
+        return resp.json()['Technical Analysis: SMA'][datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']
     else:
         return 0
 
 def ticker_60_sma(ticker, trade_date):
     sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=60&series_type=close&apikey={}'.format(ticker, API_KEY)
     resp = requests.get(sma_url)
-    if resp:
-        return resp.json()['Technical Analysis: SMA']
+    if resp.json()['Technical Analysis: SMA']:
+        return resp.json()['Technical Analysis: SMA'][datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']
     else:
         return 0
 
 def ticker_200_sma(ticker, trade_date):
     sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=200&series_type=close&apikey={}'.format(ticker, API_KEY)
     resp = requests.get(sma_url)
-    if resp:
-        return resp.json()['Technical Analysis: SMA']
+    if resp.json()['Technical Analysis: SMA']:
+        return resp.json()['Technical Analysis: SMA'][datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']
     else:
         return 0
 
