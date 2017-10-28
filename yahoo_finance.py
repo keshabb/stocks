@@ -23,6 +23,7 @@ def get_summary(ticker):
     df = pd.Series(summary)
     click.echo(click.style("Summary", fg='red', bold=True, underline=True))
     click.echo("{}".format(df))
+    click.pause(info='Press any key to continue ...', err=False)
 
 
 def get_stats(ticker):
@@ -32,8 +33,16 @@ def get_stats(ticker):
     page = requests.get(STATS)
     soup = BeautifulSoup(page.content, 'html.parser')
     data = soup.find_all('tr')
+    stats = {}
     for item in data:
-        print "{}: {}".format(item('td')[0].get_text(), item('td')[1].get_text())
+        if item('td')[0].get_text() == '':
+            continue
+        stats.update({item('td')[0].get_text(): item('td')[1].get_text()})
+    df = pd.Series(stats)
+    click.echo(click.style("Stats", fg='red', bold=True, underline=True))
+    click.echo("{}".format(df))
+    #print "{}: {}".format(item('td')[0].get_text(), item('td')[1].get_text())
+    click.pause(info='Press any key to continue ...', err=False)
 
 
 def get_profile(ticker):
@@ -43,17 +52,31 @@ def get_profile(ticker):
     page = requests.get(PROFILE)
     soup = BeautifulSoup(page.content, 'html.parser')
     company_name = soup.find('h3', attrs={'class': "Mb(10px)"})
+    click.echo(click.style("Profile", fg='red', bold=True, underline=True))
+    profile = {}
     if company_name is not None:
         print company_name.get_text().encode('utf-8')
         company_info = soup.find_all('div', attrs={'class': "Mb(35px)"})
         for d in company_info:
             print d.get_text()
     data = soup.find_all('tr')
+    name = []
+    title = []
+    pay = []
+    age = []
     for item in data:
         if not item('td') or item('td')[0].get_text() == '':
             continue
-        print "Name: {}, Title: {}, Pay: {}, Age: {}".format(item('td')[0].get_text().encode('utf-8'), 
-              item('td')[1].get_text().encode('utf-8'), item('td')[2].get_text().encode('utf-8'), item('td')[4].get_text().encode('utf-8'))
+        name.append(item('td')[0].get_text().strip().encode('utf-8'))
+        title.append(item('td')[1].get_text().strip().encode('utf-8'))
+        pay.append(item('td')[2].get_text().strip().encode('utf-8'))
+        age.append(item('td')[4].get_text().strip().encode('utf-8'))
+    profile.update({"Name": name, "Title": title, "Pay": pay, "Age": age})
+    df = pd.DataFrame(profile)
+    print(df)
+        #print "Name: {}, Title: {}, Pay: {}, Age: {}".format(item('td')[0].get_text().encode('utf-8'), 
+        #      item('td')[1].get_text().encode('utf-8'), item('td')[2].get_text().encode('utf-8'), item('td')[4].get_text().encode('utf-8'))
+    click.pause(info='Press any key to continue ...', err=False)
 
 
 def get_financials(ticker):
@@ -63,8 +86,9 @@ def get_financials(ticker):
     page = requests.get(FINANCIALS)
     soup = BeautifulSoup(page.content, 'html.parser')
  #   data = soup.find_all('tr')
-    income_statement = soup.find_all('h3', attrs={'class': "D(ib) Fz(20px) Fw(b)"})
-    print("{}".format(income_statement[0].get_text()))
+    #income_statement = soup.find_all('h3', attrs={'class': "D(ib) Fz(20px) Fw(b)"})
+    #income_statement = income_statement[0].get_text()
+    click.echo(click.style("Income Statement", fg='red', bold=True, underline=True))
     table = soup.find('table', attrs={'class': "Lh(1.7) W(100%) M(0)"})
     table_body = table.find('tbody')
     rows = table_body.find_all('tr')
@@ -91,6 +115,7 @@ def get_financials(ticker):
         #    print "Sub item: {}".format(i.get_text())
         #print "{}: {}".format(item('td')[0].get_text(), item('td')[1].get_text())
 #        print "Item:{}, Item2: {}".format(item('td')[0].get_text(), item('td'))
+    click.pause(info='Press any key to continue ...', err=False)
 
 
 def get_balance_sheets(ticker):
@@ -98,8 +123,9 @@ def get_balance_sheets(ticker):
     BALANCE_SHEET = 'https://finance.yahoo.com/quote/{}/balance-sheet?p={}'.format(ticker, ticker)
     page = requests.get(BALANCE_SHEET)
     soup = BeautifulSoup(page.content, 'html.parser')
-    balance_sheet = soup.find_all('h3', attrs={'class': "D(ib) Fz(20px) Fw(b)"})
-    print("{}".format(balance_sheet[0].get_text()))
+    #balance_sheet = soup.find_all('h3', attrs={'class': "D(ib) Fz(20px) Fw(b)"})
+    #print("{}".format(balance_sheet[0].get_text()))
+    click.echo(click.style("Balance Sheets", fg='red', bold=True, underline=True))
     table = soup.find('table', attrs={'class': "Lh(1.7) W(100%) M(0)"})
     table_body = table.find('tbody')
     rows = table_body.find_all('tr')
@@ -108,8 +134,9 @@ def get_balance_sheets(ticker):
         cols = row.find_all('td')
         cols = [ele.text.strip() for ele in cols]
         data.append([ele for ele in cols if ele])
-    balancesheet_data = pd.DataFrame(data=data)
+    balancesheet_data = pd.DataFrame(data=data, columns=['','','',''])
     print balancesheet_data
+    click.pause(info='Press any key to continue ...', err=False)
 
 
 def get_cash_flow(ticker):
@@ -117,8 +144,9 @@ def get_cash_flow(ticker):
     CASH_FLOW = 'https://finance.yahoo.com/quote/{}/cash-flow?p={}'.format(ticker, ticker)
     page = requests.get(CASH_FLOW)
     soup = BeautifulSoup(page.content, 'html.parser')
-    cashflow = soup.find_all('h3', attrs={'class': "D(ib) Fz(20px) Fw(b)"})
-    print("{}".format(cashflow[0].get_text()))
+    #cashflow = soup.find_all('h3', attrs={'class': "D(ib) Fz(20px) Fw(b)"})
+    #print("{}".format(cashflow[0].get_text()))
+    click.echo(click.style("Cash Flow", fg='red', bold=True, underline=True))
     table = soup.find('table', attrs={'class': "Lh(1.7) W(100%) M(0)"})
     table_body = table.find('tbody')
     rows = table_body.find_all('tr')
@@ -127,9 +155,9 @@ def get_cash_flow(ticker):
         cols = row.find_all('td')
         cols = [ele.text.strip() for ele in cols]
         data.append([ele for ele in cols if ele])
-    cashflow_data = pd.DataFrame(data=data)
+    cashflow_data = pd.DataFrame(data=data, columns=['','','',''])
     print cashflow_data
-
+    click.pause(info='Press any key to continue ...', err=False)
 
 def get_options(ticker):
     """ Get options data """
@@ -157,6 +185,7 @@ def get_options(ticker):
         data.append([ele for ele in cols if ele])
     options_put_data = pd.DataFrame(data=data)
     print options_put_data
+    click.pause(info='Press any key to continue ...', err=False)
 
 
 def get_holders(ticker):
@@ -165,8 +194,9 @@ def get_holders(ticker):
     HOLDERS = 'https://finance.yahoo.com/quote/{}/holders?p={}'.format(ticker, ticker)
     page = requests.get(HOLDERS)
     soup = BeautifulSoup(page.content, 'html.parser')
-    holders = soup.find_all('h3', attrs={'class': "D(ib)"})
-    print("{}".format(holders[0].get_text()))
+    #holders = soup.find_all('h3', attrs={'class': "D(ib)"})
+    #print("{}".format(holders[0].get_text()))
+    click.echo(click.style("Holders", fg='red', bold=True, underline=True))
     table = soup.find('table', attrs={'class': "Lh(1.7) W(100%) M(0)"})
     table_body = table.find('tbody')
     rows = table_body.find_all('tr')
@@ -180,7 +210,7 @@ def get_holders(ticker):
     data = soup.find_all('tr')
     for item in data:
         print "{}: {}".format(item('td')[0].get_text(), item('td')[1].get_text())
-
+    click.pause(info='Press any key to continue ...', err=False)
 
 def get_history(ticker):
     """ Get history """
@@ -201,8 +231,9 @@ def get_history(ticker):
         cols = row.find_all('td')
         cols = [ele.text.strip() for ele in cols]
         data.append([ele for ele in cols if ele])
-    history_data = pd.DataFrame(data=data)
+    history_data = pd.DataFrame(data=data, columns=['','','','','','',''])
     print history_data
+    click.pause(info='Press any key to continue ...', err=False)
 
 
 def get_analysts(ticker):
@@ -222,14 +253,15 @@ def get_analysts(ticker):
             data.append([ele for ele in cols if ele])
         analysts_data = pd.DataFrame(data=data)
         print analysts_data
+    click.pause(info='Press any key to continue ...', err=False)
 
 
 @click.command()
 @click.argument('symbol', nargs=1)
 def get_info_yahoo(symbol):
     #get_summary(symbol)
-    get_stats(symbol)
-    #get_profile(symbol)
+    #get_stats(symbol)
+    get_profile(symbol)
     #get_financials(symbol)
     #get_balance_sheets(symbol)
     #get_cash_flow(symbol)

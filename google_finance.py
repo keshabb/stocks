@@ -11,14 +11,16 @@ PORTFOLIOS = {'keshab': 'Keshab Portfolio', 'watching': 'watching portfolio',
              'david': 'David Gardner', 'iot': 'IOT', 'telecom': 'Telecom',
              'health': 'Health', 'entertainment': 'Entertainment', 'etf': 'ETF',
              'virtual-reality': 'Virtual Reality', 'airlines': 'Airlines',
-             'smallcap': 'SMALL CAP', 'midcap':'MID CAP', 'game': 'GAME'}
+             'largecap': 'LARGE CAP', 'smallcap': 'SMALL CAP',
+             'midcap':'MID CAP', 'game': 'GAME', 'china': 'Chinese',
+             'pipeline': 'Pipeline', 'cyber': 'Cyber Security'}
 @click.command()
 @click.argument('portfolio', nargs=1)
 @click.option('--days', type=int, default=None, help='No. of days to get stock info of')
 def get_google_portfolio_info(portfolio, days):
     """ Loops through portfolio symbol and returns info on each symbol.
         portfolio= {keshab, watching, david, iot, health, entertainment,
-        virtual-reality, airlines, etf, telecom, midcap, smallcap, game, solar}"""
+        virtual-reality, airlines, etf, telecom, midcap, smallcap, game, solar, china, pipeline, cyber}"""
     if not validate_portfolio(portfolio):
         click.echo("Portfolio {} doesn't exists".format(portfolio))
         sys.exit(0)
@@ -37,8 +39,9 @@ def get_name_and_symbol(portfolio, days):
         spread_reader = csv.DictReader(csvfile)
         portfolio_stocks = {}
         for item in spread_reader:
+            print item
             #print("{}\t{}".format(item['\xef\xbb\xbfName'], item['Symbol']))
-            portfolio_stocks.update({item['\xef\xbb\xbfName']: item['Symbol']})
+            portfolio_stocks.update({item['Name']: item['\xef\xbb\xbfSymbol']})
         #print portfolio_stocks
     #for name, ticker in portfolio_stocks.iteritems():
     for name, ticker in portfolio_stocks.iteritems():
