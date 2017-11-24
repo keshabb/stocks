@@ -2,15 +2,16 @@
 
 import sys
 import requests
-from pandas_yahoo_finance.pandas_finance import api
+from pandas_finance import api
 import click
 from datetime import date, datetime, timedelta
 import collections
 import pandas as pd
+import robinhood
+import quandl_sharadar_api
 
 today = date.today()
 
-API_KEY = ''
 
 
 class Stocks(object):
@@ -19,7 +20,7 @@ class Stocks(object):
 
 
 def get_end_date(days):
-    default_days = 20
+    default_days = 40
     week_day = datetime.today().weekday()
     if week_day == 5:
         trade_date = today - timedelta(days=1)
@@ -48,14 +49,14 @@ def get_prev_close_date(cur_trade_date):
 
 
 # @click.argument('stock', nargs=1)
-@click.option('--days', type=int, default=None,
-              help="No. of days to get stock info of")
-@click.command()
-def get_my_stocks_info(days):
-    for ticker in STOCKS:
-        get_stock_info(ticker, days)
-        click.echo("\n")
-        click.pause(info='Press any key to continue ...', err=False)
+#@click.option('--days', type=int, default=None,
+#              help="No. of days to get stock info of")
+#@click.command()
+#def get_my_stocks_info(days):
+#    for ticker in STOCKS:
+#        get_stock_info(ticker, days)
+#        click.echo("\n")
+#        click.pause(info='Press any key to continue ...', err=False)
 
 
 @click.argument('ticker', nargs=1)
@@ -66,12 +67,13 @@ def stock_info(ticker, days):
     get_stock_info(ticker, days)
 
 
-def get_stock_info(ticker, days=None):
+def get_stock_info(ticker, name=None, days=None):
     """ Returns ticker info """
+    rb_client = robinhood.Equity(ticker)
+    quandl_client = quandl_sharadar_api.Equity(ticker)
     trade_date, end_date = get_end_date(days)
     trade_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
     url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}'.format(ticker, API_KEY)
-    print "trade_date: {}".format(trade_date)
     sma_15 = ticker_15_sma(ticker, trade_date)
     sma_30 = ticker_30_sma(ticker, trade_date)
     sma_60 = ticker_60_sma(ticker, trade_date)
@@ -79,7 +81,10 @@ def get_stock_info(ticker, days=None):
     resp = requests.get(url)
     if resp.status_code == 200:
         data = resp.json()
-        click.echo("Ticker: {}, Date: {}".format(click.style(data['Meta Data']['2. Symbol'], fg='blue'), today))
+        if name is not None:
+            click.echo("Name: {}".format(name))
+        click.echo("Ticker: {}, Date: {}".format(click.style(data['Meta Data']['2. Symbol'], fg='red'), today))
+        click.echo("Company Summary: {}".format(rb_client.company_info))
         price_data = data['Time Series (Daily)']
         close_price_list = []
         sorted_price_data = collections.OrderedDict(sorted(price_data.items(),
@@ -95,19 +100,34 @@ def get_stock_info(ticker, days=None):
             if prev_close_date is None:
                 prev_date = get_prev_close_date(k - timedelta(days=1))
             prev_date = datetime.strftime(prev_date, '%Y-%m-%d')
-            print "K: {}".format(k)
             if k < end_date:
                 api_client = api.Equity(ticker)
-                # click.echo("Market Cap: {}, P/E: {}, EPS: {}".
-                #             format(api_client.mkt_cap, api_client.PE_Ratio,
-                #                    api_client.eps))
-                click.echo("High: {}, Low: {}, P/E: {}, EPS: {}, SMA15: {},"
-                           "SMA30: {}, SMA60: {}, SMA200: {}".
-                            format(max(close_price_list), min(close_price_list),
-                            #       api_client.PE_Ratio, api_client.eps, sma_15[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA'],
-                            #       sma_30[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA'], sma_60[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA'], sma_200[datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']))
-                                   api_client.PE_Ratio, api_client.eps, sma_15,
-                                   sma_30, sma_60, sma_200))
+                click.echo("Company Founded: {}, Company CEO: {}, IPO date: {},"
+                            "Total Employee: {}".format(click.style(str(rb_client.company_founded), fg='red'),
+                            rb_client.company_ceo, click.style(rb_client.company_ipo_date, fg='red'),
+                            rb_client.company_employees_total))
+                click.echo("Market Cap: {}, PE: {}, EPS: {}, Current Ratio: {},"
+                           "Dividend Yield: {}, Dividend Per Share: {},"
+                           "Debt Equity Ratio: {}, ROA: {}, ROE: {}, ROC: {}".\
+                            format(market_cap(rb_client.market_cap),
+                            click.style(str(rb_client.company_pe_ratio), fg='red'),
+                            quandl_client.eps,
+                            quandl_client.current_ratio,
+                            quandl_client.dividend_yield,
+                            quandl_client.dividend_per_share,
+                            quandl_client.debt_equity_ratio,
+                            quandl_client.return_on_assets,
+                            quandl_client.return_on_equity,
+                            quandl_client.return_on_invest_capital))
+                click.echo("Highest: {}, Lowest: {}, Days high: {}, Days low: {},"
+                        "52 week high: {}, 52 week low: {}, SMA15: {}, SMA30: {},"
+                        "SMA60: {}, SMA200: {}".format(click.style(str(max(close_price_list)), fg='red'),
+                                                       click.style(str(min(close_price_list)), fg='red'),
+                                                       click.style(str(max(close_price_list)), fg='red'),
+                                                       click.style(str(min(close_price_list)), fg='red'),
+                                                       click.style(str(rb_client.high_52_weeks), fg='red'),
+                                                       click.style(str(rb_client.low_52_weeks), fg='red'),
+                                                       sma_15, sma_30, sma_60, sma_200))
                 return True
             fluctuate = float(v['2. high']) - float(v['3. low'])
             try:
@@ -138,35 +158,77 @@ def get_stock_info(ticker, days=None):
 def ticker_15_sma(ticker, trade_date):
     sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=15&series_type=close&apikey={}'.format(ticker, API_KEY)
     resp = requests.get(sma_url)
-    if resp.json()['Technical Analysis: SMA']:
-        return resp.json()['Technical Analysis: SMA'][datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']
-    else:
-        return 0
+    status = check_success_code(resp)
+    if status == 'SUCCESS':
+        if resp.json()['Technical Analysis: SMA']:
+            last_refresh_date = resp.json()['Meta Data']['3: Last Refreshed']
+            if trade_date in resp.json()['Technical Analysis: SMA']:
+                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+            else:
+                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+        else:
+            return 0
 
 
 def ticker_30_sma(ticker, trade_date):
     sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=30&series_type=close&apikey={}'.format(ticker, API_KEY)
     resp = requests.get(sma_url)
-    if resp.json()['Technical Analysis: SMA']:
-        return resp.json()['Technical Analysis: SMA'][datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']
-    else:
-        return 0
+    status = check_success_code(resp)
+    if status == 'SUCCESS':
+        if resp.json()['Technical Analysis: SMA']:
+            last_refresh_date = resp.json()['Meta Data']['3: Last Refreshed']
+            if trade_date in resp.json()['Technical Analysis: SMA']:
+                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+            else:
+                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+        else:
+            return 0
 
 def ticker_60_sma(ticker, trade_date):
     sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=60&series_type=close&apikey={}'.format(ticker, API_KEY)
     resp = requests.get(sma_url)
-    if resp.json()['Technical Analysis: SMA']:
-        return resp.json()['Technical Analysis: SMA'][datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']
-    else:
-        return 0
+    status = check_success_code(resp)
+    if status == 'SUCCESS':
+        if resp.json()['Technical Analysis: SMA']:
+            last_refresh_date = resp.json()['Meta Data']['3: Last Refreshed']
+            if trade_date in resp.json()['Technical Analysis: SMA']:
+                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+            else:
+                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+        else:
+            return 0
 
 def ticker_200_sma(ticker, trade_date):
     sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=200&series_type=close&apikey={}'.format(ticker, API_KEY)
     resp = requests.get(sma_url)
-    if resp.json()['Technical Analysis: SMA']:
-        return resp.json()['Technical Analysis: SMA'][datetime.strftime(trade_date, '%Y-%m-%d')]['SMA']
+    status = check_success_code(resp)
+    if status == 'SUCCESS':
+        if resp.json()['Technical Analysis: SMA']:
+            last_refresh_date = resp.json()['Meta Data']['3: Last Refreshed']
+            if trade_date in resp.json()['Technical Analysis: SMA']:
+                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+            else:
+                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+        else:
+            return 0
+
+def market_cap(cap):
+    if float(cap) < 1000000000:
+        market_cap = float(cap) / 1000000
+        return str(market_cap) + ' Mil'
+    if float(cap) > 1000000000:
+        market_cap = float(cap) / 1000000000
+        return str(market_cap) + ' Bil'
+
+def _check_status_code(response, content_check=None):
+    if response.status_code == 200:
+        return 'SUCCESS'
     else:
-        return 0
+        return 'FAIL'
+
+def check_success_code(response, content_check=None):
+
+    return _check_status_code(response, content_check=None)
 
 def main():
     pass
