@@ -13,7 +13,6 @@ import quandl_sharadar_api
 today = date.today()
 
 
-
 class Stocks(object):
     def __init__(self):
         pass
@@ -162,10 +161,7 @@ def ticker_15_sma(ticker, trade_date):
     if status == 'SUCCESS':
         if resp.json()['Technical Analysis: SMA']:
             last_refresh_date = resp.json()['Meta Data']['3: Last Refreshed']
-            if trade_date in resp.json()['Technical Analysis: SMA']:
-                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
-            else:
-                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+            return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
         else:
             return 0
 
@@ -177,10 +173,7 @@ def ticker_30_sma(ticker, trade_date):
     if status == 'SUCCESS':
         if resp.json()['Technical Analysis: SMA']:
             last_refresh_date = resp.json()['Meta Data']['3: Last Refreshed']
-            if trade_date in resp.json()['Technical Analysis: SMA']:
-                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
-            else:
-                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+            return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
         else:
             return 0
 
@@ -191,10 +184,7 @@ def ticker_60_sma(ticker, trade_date):
     if status == 'SUCCESS':
         if resp.json()['Technical Analysis: SMA']:
             last_refresh_date = resp.json()['Meta Data']['3: Last Refreshed']
-            if trade_date in resp.json()['Technical Analysis: SMA']:
-                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
-            else:
-                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+            return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
         else:
             return 0
 
@@ -205,10 +195,7 @@ def ticker_200_sma(ticker, trade_date):
     if status == 'SUCCESS':
         if resp.json()['Technical Analysis: SMA']:
             last_refresh_date = resp.json()['Meta Data']['3: Last Refreshed']
-            if trade_date in resp.json()['Technical Analysis: SMA']:
-                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
-            else:
-                return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+            return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
         else:
             return 0
 
