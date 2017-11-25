@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import requests
 from pandas_finance import api
@@ -11,8 +12,9 @@ import robinhood
 import quandl_sharadar_api
 
 today = date.today()
+AV_API_KEY = os.environ.get('AV_API_KEY')
 
-
+print AV_API_KEY
 class Stocks(object):
     def __init__(self):
         pass
@@ -72,7 +74,7 @@ def get_stock_info(ticker, name=None, days=None):
     quandl_client = quandl_sharadar_api.Equity(ticker)
     trade_date, end_date = get_end_date(days)
     trade_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
-    url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}'.format(ticker, API_KEY)
+    url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}'.format(ticker, AV_API_KEY)
     sma_15 = ticker_15_sma(ticker, trade_date)
     sma_30 = ticker_30_sma(ticker, trade_date)
     sma_60 = ticker_60_sma(ticker, trade_date)
@@ -155,7 +157,7 @@ def get_stock_info(ticker, name=None, days=None):
 
 
 def ticker_15_sma(ticker, trade_date):
-    sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=15&series_type=close&apikey={}'.format(ticker, API_KEY)
+    sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=15&series_type=close&apikey={}'.format(ticker, AV_API_KEY)
     resp = requests.get(sma_url)
     status = check_success_code(resp)
     if status == 'SUCCESS':
@@ -167,7 +169,7 @@ def ticker_15_sma(ticker, trade_date):
 
 
 def ticker_30_sma(ticker, trade_date):
-    sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=30&series_type=close&apikey={}'.format(ticker, API_KEY)
+    sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=30&series_type=close&apikey={}'.format(ticker, AV_API_KEY)
     resp = requests.get(sma_url)
     status = check_success_code(resp)
     if status == 'SUCCESS':
@@ -178,7 +180,7 @@ def ticker_30_sma(ticker, trade_date):
             return 0
 
 def ticker_60_sma(ticker, trade_date):
-    sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=60&series_type=close&apikey={}'.format(ticker, API_KEY)
+    sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=60&series_type=close&apikey={}'.format(ticker, AV_API_KEY)
     resp = requests.get(sma_url)
     status = check_success_code(resp)
     if status == 'SUCCESS':
@@ -189,7 +191,7 @@ def ticker_60_sma(ticker, trade_date):
             return 0
 
 def ticker_200_sma(ticker, trade_date):
-    sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=200&series_type=close&apikey={}'.format(ticker, API_KEY)
+    sma_url = 'https://www.alphavantage.co/query?function=SMA&symbol={}&interval=daily&time_period=200&series_type=close&apikey={}'.format(ticker, AV_API_KEY)
     resp = requests.get(sma_url)
     status = check_success_code(resp)
     if status == 'SUCCESS':
