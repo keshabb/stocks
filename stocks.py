@@ -14,7 +14,6 @@ import quandl_sharadar_api
 today = date.today()
 AV_API_KEY = os.environ.get('AV_API_KEY')
 
-print AV_API_KEY
 class Stocks(object):
     def __init__(self):
         pass
