@@ -22,7 +22,7 @@ class Stocks(object):
 
 
 def get_end_date(days):
-    default_days = 40
+    default_days = 30
     week_day = datetime.today().weekday()
     if week_day == 5:
         trade_date = today - timedelta(days=1)
@@ -66,7 +66,7 @@ def get_prev_close_date(cur_trade_date):
               help='No. of days to get stock info of')
 @click.command()
 def stock_info(ticker, days):
-    get_stock_info(ticker, days)
+    get_stock_info(ticker, None, days)
 
 
 def get_stock_info(ticker, name=None, days=None):
