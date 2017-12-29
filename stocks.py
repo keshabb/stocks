@@ -10,9 +10,11 @@ import collections
 import pandas as pd
 import robinhood
 import quandl_sharadar_api
+import config
+#import etrade_api
 
 today = date.today()
-AV_API_KEY = os.environ.get('AV_API_KEY')
+AV_API_KEY = config.AV_API_KEY
 
 class Stocks(object):
     def __init__(self):
@@ -69,6 +71,8 @@ def stock_info(ticker, days):
 
 def get_stock_info(ticker, name=None, days=None):
     """ Returns ticker info """
+#    etrade_acct_obj = etrade_api.Account()
+#    ticker_obj = etrade_api.Equity(etrade_acct_obj, ticker)
     rb_client = robinhood.Equity(ticker)
     quandl_client = quandl_sharadar_api.Equity(ticker)
     trade_date, end_date = get_end_date(days)
@@ -119,6 +123,7 @@ def get_stock_info(ticker, name=None, days=None):
                             quandl_client.return_on_assets,
                             quandl_client.return_on_equity,
                             quandl_client.return_on_invest_capital))
+#                click.echo("EPS: {}".format(ticker_obj.eps))
                 click.echo("Highest: {}, Lowest: {}, Days high: {}, Days low: {},"
                         "52 week high: {}, 52 week low: {}, SMA15: {}, SMA30: {},"
                         "SMA60: {}, SMA200: {}".format(click.style(str(max(close_price_list)), fg='red'),
