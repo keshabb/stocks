@@ -11,10 +11,11 @@ import pandas as pd
 import robinhood
 import quandl_sharadar_api
 import config
-#import etrade_api
+import etrade_api
 
 today = date.today()
 AV_API_KEY = config.AV_API_KEY
+etrade_acct_obj = etrade_api.Account()
 
 class Stocks(object):
     def __init__(self):
@@ -71,8 +72,7 @@ def stock_info(ticker, days):
 
 def get_stock_info(ticker, name=None, days=None):
     """ Returns ticker info """
-#    etrade_acct_obj = etrade_api.Account()
-#    ticker_obj = etrade_api.Equity(etrade_acct_obj, ticker)
+    ticker_obj = etrade_api.Equity(etrade_acct_obj, ticker)
     rb_client = robinhood.Equity(ticker)
     quandl_client = quandl_sharadar_api.Equity(ticker)
     trade_date, end_date = get_end_date(days)
@@ -110,15 +110,17 @@ def get_stock_info(ticker, name=None, days=None):
                             "Total Employee: {}".format(click.style(str(rb_client.company_founded), fg='red'),
                             rb_client.company_ceo, click.style(rb_client.company_ipo_date, fg='red'),
                             rb_client.company_employees_total))
-                click.echo("Market Cap: {}, PE: {}, EPS: {}, Current Ratio: {},"
-                           "Dividend Yield: {}, Dividend Per Share: {},"
+                click.echo("Market Cap: {}, PE: {}, EPS: {},"
+                           "Current Ratio: {},Dividend Yield: {},"
+                           "Dividend Per Share: {}, Estimated EPS: {},"
                            "Debt Equity Ratio: {}, ROA: {}, ROE: {}, ROC: {}".\
                             format(market_cap(rb_client.market_cap),
                             click.style(str(rb_client.company_pe_ratio), fg='red'),
-                            quandl_client.eps,
+                            ticker_obj.eps,
                             quandl_client.current_ratio,
-                            quandl_client.dividend_yield,
-                            quandl_client.dividend_per_share,
+                            ticker_obj.dividend,
+                            ticker_obj.annualDividend,
+                            ticker_obj.estEarnings,
                             quandl_client.debt_equity_ratio,
                             quandl_client.return_on_assets,
                             quandl_client.return_on_equity,
