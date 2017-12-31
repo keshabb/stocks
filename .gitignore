@@ -3,3 +3,4 @@ credentials
 *.csv
 *.txt
 venv
+config.py
