@@ -3,7 +3,6 @@
 import os
 import sys
 import requests
-from pandas_finance import api
 import click
 from datetime import date, datetime, timedelta
 import collections
@@ -105,7 +104,6 @@ def get_stock_info(ticker, name=None, days=None):
                 prev_date = get_prev_close_date(k - timedelta(days=1))
             prev_date = datetime.strftime(prev_date, '%Y-%m-%d')
             if k < end_date:
-                api_client = api.Equity(ticker)
                 click.echo("Company Founded: {}, Company CEO: {}, IPO date: {},"
                             "Total Employee: {}".format(click.style(str(rb_client.company_founded), fg='red'),
                             rb_client.company_ceo, click.style(rb_client.company_ipo_date, fg='red'),
