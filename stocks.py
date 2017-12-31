@@ -8,7 +8,6 @@ from datetime import date, datetime, timedelta
 import collections
 import pandas as pd
 import robinhood
-import quandl_sharadar_api
 import config
 import etrade_api
 
@@ -50,17 +49,6 @@ def get_prev_close_date(cur_trade_date):
     return prev_close_date
 
 
-# @click.argument('stock', nargs=1)
-#@click.option('--days', type=int, default=None,
-#              help="No. of days to get stock info of")
-#@click.command()
-#def get_my_stocks_info(days):
-#    for ticker in STOCKS:
-#        get_stock_info(ticker, days)
-#        click.echo("\n")
-#        click.pause(info='Press any key to continue ...', err=False)
-
-
 @click.argument('ticker', nargs=1)
 @click.option('--days', type=int, default=None,
               help='No. of days to get stock info of')
@@ -73,7 +61,6 @@ def get_stock_info(ticker, name=None, days=None):
     """ Returns ticker info """
     ticker_obj = etrade_api.Equity(etrade_acct_obj, ticker)
     rb_client = robinhood.Equity(ticker)
-    quandl_client = quandl_sharadar_api.Equity(ticker)
     trade_date, end_date = get_end_date(days)
     trade_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
     url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}'.format(ticker, AV_API_KEY)
@@ -109,20 +96,14 @@ def get_stock_info(ticker, name=None, days=None):
                             rb_client.company_ceo, click.style(rb_client.company_ipo_date, fg='red'),
                             rb_client.company_employees_total))
                 click.echo("Market Cap: {}, PE: {}, EPS: {},"
-                           "Current Ratio: {},Dividend Yield: {},"
-                           "Dividend Per Share: {}, Estimated EPS: {},"
-                           "Debt Equity Ratio: {}, ROA: {}, ROE: {}, ROC: {}".\
+                           "Dividend Yield: {}, Dividend Per Share: {},"
+                           "Estimated EPS: {}".\
                             format(market_cap(rb_client.market_cap),
                             click.style(str(rb_client.company_pe_ratio), fg='red'),
                             ticker_obj.eps,
-                            quandl_client.current_ratio,
                             ticker_obj.dividend,
                             ticker_obj.annualDividend,
-                            ticker_obj.estEarnings,
-                            quandl_client.debt_equity_ratio,
-                            quandl_client.return_on_assets,
-                            quandl_client.return_on_equity,
-                            quandl_client.return_on_invest_capital))
+                            ticker_obj.estEarnings))
 #                click.echo("EPS: {}".format(ticker_obj.eps))
                 click.echo("Highest: {}, Lowest: {}, Days high: {}, Days low: {},"
                         "52 week high: {}, 52 week low: {}, SMA15: {}, SMA30: {},"
