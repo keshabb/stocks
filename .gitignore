@@ -1,3 +1,4 @@
 *.pyc
 credentials
 *.csv
+*.txt
