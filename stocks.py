@@ -21,6 +21,10 @@ class Stocks(object):
         pass
 
 
+class StockHTTPError(requests.HTTPError):
+    pass
+
+
 def get_end_date(days):
     default_days = 30
     week_day = datetime.today().weekday()
@@ -64,82 +68,84 @@ def get_stock_info(ticker, name=None, days=None):
     rb_client = robinhood.Equity(ticker)
     trade_date, end_date = get_end_date(days)
     trade_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
-    url = '{}/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}'.format(host, ticker, AV_API_KEY)
     sma_15 = ticker_15_sma(ticker, trade_date)
     sma_30 = ticker_30_sma(ticker, trade_date)
     sma_60 = ticker_60_sma(ticker, trade_date)
     sma_200 = ticker_200_sma(ticker, trade_date)
+    url = '{}/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}'.\
+          format(host, ticker, AV_API_KEY)
     resp = requests.get(url)
-    if resp.status_code == 200:
-        data = resp.json()
-        if name is not None:
-            click.echo("Name: {}".format(name))
-        click.echo("Ticker: {}, Date: {}".format(click.style(data['Meta Data']['2. Symbol'], fg='red'), today))
-        click.echo("Company Summary: {}".format(rb_client.company_info))
-        price_data = data['Time Series (Daily)']
-        close_price_list = []
-        sorted_price_data = collections.OrderedDict(sorted(price_data.items(),
-                                                           reverse=True))
-        for k, v in sorted_price_data.items():
-            if ':' in k:
-                k = datetime.strptime(k, '%Y-%m-%d %H:%M:%S').date()
-            else:
-                k = datetime.strptime(k, '%Y-%m-%d').date()
-            prev_date = get_prev_close_date(k)
-            prev_date_str = datetime.strftime(prev_date, '%Y-%m-%d')
-            prev_close_date = price_data.get(prev_date_str, None)
-            if prev_close_date is None:
-                prev_date = get_prev_close_date(k - timedelta(days=1))
-            prev_date = datetime.strftime(prev_date, '%Y-%m-%d')
-            if k < end_date:
-                click.echo("Company Founded: {}, Company CEO: {}, IPO date: {},"
-                            "Total Employee: {}".format(click.style(str(rb_client.company_founded), fg='red'),
-                            rb_client.company_ceo, click.style(rb_client.company_ipo_date, fg='red'),
-                            rb_client.company_employees_total))
-                click.echo("Market Cap: {}, PE: {}, EPS: {},"
-                           "Dividend Yield: {}, Dividend Per Share: {},"
-                           "Estimated EPS: {}".\
-                            format(market_cap(rb_client.market_cap),
-                            click.style(str(rb_client.company_pe_ratio), fg='red'),
-                            ticker_obj.eps,
-                            ticker_obj.dividend,
-                            ticker_obj.annualDividend,
-                            ticker_obj.estEarnings))
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError as e:
+        raise StockHTTPError(e)
+    data = resp.json()
+    if name is not None:
+        click.echo("Name: {}".format(name))
+    click.echo("Ticker: {}, Date: {}".format(click.style(data['Meta Data']['2. Symbol'], fg='red'), today))
+    click.echo("Company Summary: {}".format(rb_client.company_info))
+    price_data = data['Time Series (Daily)']
+    close_price_list = []
+    sorted_price_data = collections.OrderedDict(sorted(price_data.items(),
+                                                       reverse=True))
+    for k, v in sorted_price_data.items():
+        if ':' in k:
+            k = datetime.strptime(k, '%Y-%m-%d %H:%M:%S').date()
+        else:
+            k = datetime.strptime(k, '%Y-%m-%d').date()
+        prev_date = get_prev_close_date(k)
+        prev_date_str = datetime.strftime(prev_date, '%Y-%m-%d')
+        prev_close_date = price_data.get(prev_date_str, None)
+        if prev_close_date is None:
+            prev_date = get_prev_close_date(k - timedelta(days=1))
+        prev_date = datetime.strftime(prev_date, '%Y-%m-%d')
+        if k < end_date:
+            click.echo("Company Founded: {}, Company CEO: {}, IPO date: {},"
+                        "Total Employee: {}".format(click.style(str(rb_client.company_founded), fg='red'),
+                        rb_client.company_ceo, click.style(rb_client.company_ipo_date, fg='red'),
+                        rb_client.company_employees_total))
+            click.echo("Market Cap: {}, PE: {}, EPS: {},"
+                       "Dividend Yield: {}, Dividend Per Share: {},"
+                       "Estimated EPS: {}".\
+                        format(market_cap(rb_client.market_cap),
+                        click.style(str(rb_client.company_pe_ratio), fg='red'),
+                        ticker_obj.eps,
+                        ticker_obj.dividend,
+                        ticker_obj.annualDividend,
+                        ticker_obj.estEarnings))
 #                click.echo("EPS: {}".format(ticker_obj.eps))
-                click.echo("Highest: {}, Lowest: {}, Days high: {}, Days low: {},"
-                        "52 week high: {}, 52 week low: {}, SMA15: {}, SMA30: {},"
-                        "SMA60: {}, SMA200: {}".format(click.style(str(max(close_price_list)), fg='red'),
-                                                       click.style(str(min(close_price_list)), fg='red'),
-                                                       click.style(str(max(close_price_list)), fg='red'),
-                                                       click.style(str(min(close_price_list)), fg='red'),
-                                                       click.style(str(rb_client.high_52_weeks), fg='red'),
-                                                       click.style(str(rb_client.low_52_weeks), fg='red'),
-                                                       sma_15, sma_30, sma_60, sma_200))
-                return True
-            fluctuate = float(v['2. high']) - float(v['3. low'])
-            try:
-                fluctuate_percent = (fluctuate / float(v['4. close'])) * 100
-            except ZeroDivisionError:
-                fluctuate_percent = 9999.99
-            try:
-                change = float(v['4. close']) - float(price_data[prev_date]['4. close'])
-            except KeyError:
-                continue
-            try:
-                change_percent = (change / float(price_data[prev_date]['4. close'])) * 100
-            except ZeroDivisionError:
-                change_percent = 9999.99
-            vol = int(v['5. volume']) / 1000
-            close_price_list.append(float(v['4. close']))
-            click.echo("Date: {}, Open Price: ${}, Close price: ${},"
-                       "Fluctuate: ${}, Fluctuate %: {}, Change: ${},"
-                       "Change %: {}, Volume: {} k".
-                       format(k, round(float(v['1. open']), 3),
-                              round(float(v['4. close']), 3),
-                              round(fluctuate, 3), round(fluctuate_percent, 2),
-                              round(change, 2), round(change_percent, 2), vol))
-    else:
-        click.echo("Failed to get data for {}".format(ticker))
+            click.echo("Highest: {}, Lowest: {}, Days high: {}, Days low: {},"
+                    "52 week high: {}, 52 week low: {}, SMA15: {}, SMA30: {},"
+                    "SMA60: {}, SMA200: {}".format(click.style(str(max(close_price_list)), fg='red'),
+                                                   click.style(str(min(close_price_list)), fg='red'),
+                                                   click.style(str(max(close_price_list)), fg='red'),
+                                                   click.style(str(min(close_price_list)), fg='red'),
+                                                   click.style(str(rb_client.high_52_weeks), fg='red'),
+                                                   click.style(str(rb_client.low_52_weeks), fg='red'),
+                                                   sma_15, sma_30, sma_60, sma_200))
+            return True
+        fluctuate = float(v['2. high']) - float(v['3. low'])
+        try:
+            fluctuate_percent = (fluctuate / float(v['4. close'])) * 100
+        except ZeroDivisionError:
+            fluctuate_percent = 9999.99
+        try:
+            change = float(v['4. close']) - float(price_data[prev_date]['4. close'])
+        except KeyError:
+            continue
+        try:
+            change_percent = (change / float(price_data[prev_date]['4. close'])) * 100
+        except ZeroDivisionError:
+            change_percent = 9999.99
+        vol = int(v['5. volume']) / 1000
+        close_price_list.append(float(v['4. close']))
+        click.echo("Date: {}, Open Price: ${}, Close price: ${},"
+                   "Fluctuate: ${}, Fluctuate %: {}, Change: ${},"
+                   "Change %: {}, Volume: {} k".
+                   format(k, round(float(v['1. open']), 3),
+                          round(float(v['4. close']), 3),
+                          round(fluctuate, 3), round(fluctuate_percent, 2),
+                          round(change, 2), round(change_percent, 2), vol))
 
 
 def ticker_15_sma(ticker, trade_date):
