@@ -101,7 +101,7 @@ def get_stock_info(ticker, name=None, days=None):
         prev_date = datetime.strftime(prev_date, '%Y-%m-%d')
         if k < end_date:
             click.echo("Company Founded: {}, Company CEO: {}, IPO date: {},"
-                        "Total Employee: {}".format(click.style(str(rb_client.company_founded), fg='red'),
+                       "Total Employee: {}".format(click.style(str(rb_client.company_founded), fg='red'),
                         rb_client.company_ceo, click.style(rb_client.company_ipo_date, fg='red'),
                         rb_client.company_employees_total))
             click.echo("Market Cap: {}, PE: {}, EPS: {},"
@@ -113,7 +113,9 @@ def get_stock_info(ticker, name=None, days=None):
                         ticker_obj.dividend,
                         ticker_obj.annualDividend,
                         ticker_obj.estEarnings))
-#                click.echo("EPS: {}".format(ticker_obj.eps))
+#            click.echo("Market Cap: {}, PE: {},".\
+#                        format(market_cap(rb_client.market_cap),
+#                        click.style(str(rb_client.company_pe_ratio), fg='red')))
             click.echo("Highest: {}, Lowest: {}, Days high: {}, Days low: {},"
                     "52 week high: {}, 52 week low: {}, SMA15: {}, SMA30: {},"
                     "SMA60: {}, SMA200: {}".format(click.style(str(max(close_price_list)), fg='red'),
