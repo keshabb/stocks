@@ -14,6 +14,7 @@ import etrade_api
 today = date.today()
 AV_API_KEY = config.AV_API_KEY
 host = 'https://www.alphavantage.co'
+etrade_acct_obj = etrade_api.Account()
 
 class Stocks(object):
     def __init__(self):
@@ -63,7 +64,6 @@ def stock_info(ticker, days):
 
 def get_stock_info(ticker, name=None, days=None):
     """ Returns ticker info """
-    etrade_acct_obj = etrade_api.Account()
     ticker_obj = etrade_api.Equity(etrade_acct_obj, ticker)
     rb_client = robinhood.Equity(ticker)
     trade_date, end_date = get_end_date(days)
@@ -116,39 +116,52 @@ def get_stock_info(ticker, name=None, days=None):
 #            click.echo("Market Cap: {}, PE: {},".\
 #                        format(market_cap(rb_client.market_cap),
 #                        click.style(str(rb_client.company_pe_ratio), fg='red')))
-            click.echo("Highest: {}, Lowest: {}, Days high: {}, Days low: {},"
-                    "52 week high: {}, 52 week low: {}, SMA15: {}, SMA30: {},"
-                    "SMA60: {}, SMA200: {}".format(click.style(str(max(close_price_list)), fg='red'),
-                                                   click.style(str(min(close_price_list)), fg='red'),
-                                                   click.style(str(max(close_price_list)), fg='red'),
-                                                   click.style(str(min(close_price_list)), fg='red'),
-                                                   click.style(str(rb_client.high_52_weeks), fg='red'),
-                                                   click.style(str(rb_client.low_52_weeks), fg='red'),
-                                                   sma_15, sma_30, sma_60, sma_200))
+            click.echo("Highest: {}, Lowest: {}, 52 week high: {},"
+                       "52 week low: {}, SMA15: {}, SMA30: {}, SMA60: {},"
+                       "SMA200: {}".format(click.style(str(max(close_price_list)), fg='red'),
+                                           click.style(str(min(close_price_list)), fg='red'),
+                                           click.style(str(rb_client.high_52_weeks), fg='red'),
+                                           click.style(str(rb_client.low_52_weeks), fg='red'),
+                                           sma_15, sma_30, sma_60, sma_200))
             return True
-        fluctuate = float(v['2. high']) - float(v['3. low'])
+        fluctuate = get_volatility(float(v['2. high']), float(v['3. low']))
+        fluctuate_percent = get_volatility_percent(fluctuate, float(v['4. close']))
         try:
-            fluctuate_percent = (fluctuate / float(v['4. close'])) * 100
-        except ZeroDivisionError:
-            fluctuate_percent = 9999.99
-        try:
-            change = float(v['4. close']) - float(price_data[prev_date]['4. close'])
+            change = get_price_change(float(v['4. close']), float(price_data[prev_date]['4. close']))
         except KeyError:
             continue
-        try:
-            change_percent = (change / float(price_data[prev_date]['4. close'])) * 100
-        except ZeroDivisionError:
-            change_percent = 9999.99
+        change_percent = get_price_change_percent(change, float(price_data[prev_date]['4. close']))
         vol = int(v['5. volume']) / 1000
         close_price_list.append(float(v['4. close']))
         click.echo("Date: {}, Open Price: ${}, Close price: ${},"
-                   "Fluctuate: ${}, Fluctuate %: {}, Change: ${},"
-                   "Change %: {}, Volume: {} k".
+                   "High: {}, Low: {}, Fluctuate: ${}, Fluctuate %: {},"
+                   "Change: ${}, Change %: {}, Volume: {} k".
                    format(k, round(float(v['1. open']), 3),
                           round(float(v['4. close']), 3),
+                          round(float(v['2. high']),3), round(float(v['3. low']),3),
                           round(fluctuate, 3), round(fluctuate_percent, 2),
                           round(change, 2), round(change_percent, 2), vol))
 
+
+def get_volatility(high, low):
+    return high - low
+
+def get_volatility_percent(fluctuate, close):
+    try:
+        fluctuate_percent = (fluctuate / close) * 100
+    except ZeroDivisionError:
+        fluctuate_percent = 9999.99
+    return fluctuate_percent
+
+def get_price_change(close, prev_close):
+    return close - prev_close
+
+def get_price_change_percent(change, prev_close):
+    try:
+        change_percent = (change / prev_close) * 100
+    except ZeroDivisionError:
+        change_percent = 9999.99
+    return change_percent
 
 def ticker_15_sma(ticker):
     sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=15&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
