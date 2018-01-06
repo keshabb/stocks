@@ -196,12 +196,14 @@ def ticker_200_sma(ticker, trade_date):
             return 0
 
 def market_cap(cap):
-    if float(cap) < 1000000000:
-        market_cap = float(cap) / 1000000
-        return str(market_cap) + ' Mil'
-    if float(cap) > 1000000000:
-        market_cap = float(cap) / 1000000000
-        return str(market_cap) + ' Bil'
+    if cap is not None:
+        if float(cap) < 1000000000:
+            market_cap = float(cap) / 1000000
+            return str(market_cap) + ' Mil'
+        if float(cap) > 1000000000:
+            market_cap = float(cap) / 1000000000
+            return str(market_cap) + ' Bil'
+    return cap
 
 def _check_status_code(response, content_check=None):
     if response.status_code == 200:
