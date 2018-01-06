@@ -13,7 +13,6 @@ import etrade_api
 
 today = date.today()
 AV_API_KEY = config.AV_API_KEY
-etrade_acct_obj = etrade_api.Account()
 host = 'https://www.alphavantage.co'
 
 class Stocks(object):
@@ -64,14 +63,15 @@ def stock_info(ticker, days):
 
 def get_stock_info(ticker, name=None, days=None):
     """ Returns ticker info """
+    etrade_acct_obj = etrade_api.Account()
     ticker_obj = etrade_api.Equity(etrade_acct_obj, ticker)
     rb_client = robinhood.Equity(ticker)
     trade_date, end_date = get_end_date(days)
     trade_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
-    sma_15 = ticker_15_sma(ticker, trade_date)
-    sma_30 = ticker_30_sma(ticker, trade_date)
-    sma_60 = ticker_60_sma(ticker, trade_date)
-    sma_200 = ticker_200_sma(ticker, trade_date)
+    sma_15 = ticker_15_sma(ticker)
+    sma_30 = ticker_30_sma(ticker)
+    sma_60 = ticker_60_sma(ticker)
+    sma_200 = ticker_200_sma(ticker)
     url = '{}/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}'.\
           format(host, ticker, AV_API_KEY)
     resp = requests.get(url)
@@ -150,7 +150,7 @@ def get_stock_info(ticker, name=None, days=None):
                           round(change, 2), round(change_percent, 2), vol))
 
 
-def ticker_15_sma(ticker, trade_date):
+def ticker_15_sma(ticker):
     sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=15&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
     resp = requests.get(sma_url)
     status = check_success_code(resp)
@@ -162,7 +162,7 @@ def ticker_15_sma(ticker, trade_date):
             return 0
 
 
-def ticker_30_sma(ticker, trade_date):
+def ticker_30_sma(ticker):
     sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=30&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
     resp = requests.get(sma_url)
     status = check_success_code(resp)
@@ -173,7 +173,7 @@ def ticker_30_sma(ticker, trade_date):
         else:
             return 0
 
-def ticker_60_sma(ticker, trade_date):
+def ticker_60_sma(ticker):
     sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=60&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
     resp = requests.get(sma_url)
     status = check_success_code(resp)
@@ -184,7 +184,7 @@ def ticker_60_sma(ticker, trade_date):
         else:
             return 0
 
-def ticker_200_sma(ticker, trade_date):
+def ticker_200_sma(ticker):
     sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=200&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
     resp = requests.get(sma_url)
     status = check_success_code(resp)
