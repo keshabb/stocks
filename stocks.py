@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#/!/usr/bin/env python
 
 import os
 import sys
@@ -6,15 +6,18 @@ import requests
 import click
 from datetime import date, datetime, timedelta
 import collections
-import pandas as pd
 import robinhood
 import config
 import etrade_api
+from pandas_finance import Equity
+import get_yahoo_finance as yahoo_info
 
 today = date.today()
 AV_API_KEY = config.AV_API_KEY
 host = 'https://www.alphavantage.co'
 etrade_acct_obj = etrade_api.Account()
+rh_acct_obj = robinhood.Authenticate()
+session = requests.Session()
 
 class Stocks(object):
     def __init__(self):
@@ -64,17 +67,25 @@ def stock_info(ticker, days):
 
 def get_stock_info(ticker, name=None, days=None):
     """ Returns ticker info """
+    yahoo_ticker_obj = Equity(ticker)
     ticker_obj = etrade_api.Equity(etrade_acct_obj, ticker)
-    rb_client = robinhood.Equity(ticker)
+    if ticker_obj.quote_all is None:
+        return None
+    rb_client = robinhood.Equity(rh_acct_obj, ticker)
+    if rb_client.equity_ticker is None:
+        return None
+    yahoo_summary_info = yahoo_info.get_summary(ticker)
+    yahoo_equity_info = yahoo_info.get_stats(ticker)
     trade_date, end_date = get_end_date(days)
     trade_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
-    sma_15 = ticker_15_sma(ticker)
-    sma_30 = ticker_30_sma(ticker)
-    sma_60 = ticker_60_sma(ticker)
+    sma_10 = ticker_10_sma(ticker)
+    sma_21 = ticker_21_sma(ticker)
+    sma_50 = ticker_50_sma(ticker)
     sma_200 = ticker_200_sma(ticker)
+    rsi = get_rsi(ticker)
     url = '{}/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}'.\
           format(host, ticker, AV_API_KEY)
-    resp = requests.get(url)
+    resp = session.get(url)
     try:
         resp.raise_for_status()
     except requests.HTTPError as e:
@@ -82,12 +93,17 @@ def get_stock_info(ticker, name=None, days=None):
     data = resp.json()
     if name is not None:
         click.echo("Name: {}".format(name))
-    click.echo("Ticker: {}, Date: {}".format(click.style(data['Meta Data']['2. Symbol'], fg='red'), today))
+    click.echo("Ticker: {}, Sector: {}, Industry:{}, Date: {}".\
+               format(click.style(data['Meta Data']['2. Symbol'], fg='red'),
+                      yahoo_ticker_obj.sector, yahoo_ticker_obj.industry,
+                      today))
     click.echo("Company Summary: {}".format(rb_client.company_info))
     price_data = data['Time Series (Daily)']
     close_price_list = []
     sorted_price_data = collections.OrderedDict(sorted(price_data.items(),
                                                        reverse=True))
+    click.echo("Date\t\tOpen Price ($)\tClose price ($)\tHigh ($)\tLow ($)\t"
+               "\tFluctuate ($)\tFluctuate (%)\tChange ($)\tChange (%)\tVolume(k)")
     for k, v in sorted_price_data.items():
         if ':' in k:
             k = datetime.strptime(k, '%Y-%m-%d %H:%M:%S').date()
@@ -100,12 +116,12 @@ def get_stock_info(ticker, name=None, days=None):
             prev_date = get_prev_close_date(k - timedelta(days=1))
         prev_date = datetime.strftime(prev_date, '%Y-%m-%d')
         if k < end_date:
-            click.echo("Company Founded: {}, Company CEO: {}, IPO date: {},"
+            click.echo("Company Founded: {}\t\tCEO: {}\tIPO date: {}\t\t"
                        "Total Employee: {}".format(click.style(str(rb_client.company_founded), fg='red'),
                         rb_client.company_ceo, click.style(rb_client.company_ipo_date, fg='red'),
                         rb_client.company_employees_total))
-            click.echo("Market Cap: {}, PE: {}, EPS: {},"
-                       "Dividend Yield: {}, Dividend Per Share: {},"
+            click.echo("Market Cap: {}\tPE: {}\t\tEPS: {}\t\t\t"
+                       "Dividend Yield: {}\t\tDividend Per Share: {}\t"
                        "Estimated EPS: {}".\
                         format(market_cap(rb_client.market_cap),
                         click.style(str(rb_client.company_pe_ratio), fg='red'),
@@ -113,16 +129,39 @@ def get_stock_info(ticker, name=None, days=None):
                         ticker_obj.dividend,
                         ticker_obj.annualDividend,
                         ticker_obj.estEarnings))
+            click.echo("Trailing PE: {}\t\tForward PE: {}\tP/S (ttm): {}\t\t\t"
+                       "P/B (mrq): {}\t\t\tBeta: {}\t\t\tProfit Margin: {}\n"
+                       "Operating Margin(ttm): {}\tROE: {}\t\tROA: {}\t\t\tRevenue per Share: {}\t"
+                       "Gross Profit(ttm): {}\tCurrent Ratio (mrq): {}\nQuarterly Revenue Growth (yoy): {}\t\t\t"
+                       "Quarterly Earnings Growth (yoy): {}\t\t\t\tTotal Debt/Equity (mrq): {}\n"
+                       "Book Value Per Share (mrq): {}\t\t\tTotal Cash Per Share (mrq): {}\t\t\t\t 1 yr target: {}".
+                       format(yahoo_equity_info['Trailing P/E'], yahoo_equity_info['Forward P/E 1'],
+                              yahoo_equity_info['Price/Sales (ttm)'], yahoo_equity_info['Price/Book (mrq)'],
+                              yahoo_equity_info['Beta'], yahoo_equity_info['Profit Margin'],
+                              yahoo_equity_info['Operating Margin (ttm)'],
+                              yahoo_equity_info['Return on Equity (ttm)'],
+                              yahoo_equity_info['Return on Assets (ttm)'],
+                              yahoo_equity_info['Revenue Per Share (ttm)'],
+                              yahoo_equity_info['Gross Profit (ttm)'],
+                              yahoo_equity_info['Current Ratio (mrq)'],
+                              yahoo_equity_info['Quarterly Revenue Growth (yoy)'],
+                              yahoo_equity_info['Quarterly Earnings Growth (yoy)'],
+                              #yahoo_equity_info['Total Cash (mrq)'],
+                              yahoo_equity_info['Total Debt/Equity (mrq)'],
+                              yahoo_equity_info['Book Value Per Share (mrq)'],
+                              yahoo_equity_info['Total Cash Per Share (mrq)'],
+                              yahoo_summary_info['1y Target Est']))
 #            click.echo("Market Cap: {}, PE: {},".\
 #                        format(market_cap(rb_client.market_cap),
 #                        click.style(str(rb_client.company_pe_ratio), fg='red')))
-            click.echo("Highest: {}, Lowest: {}, 52 week high: {},"
-                       "52 week low: {}, SMA15: {}, SMA30: {}, SMA60: {},"
-                       "SMA200: {}".format(click.style(str(max(close_price_list)), fg='red'),
+            click.echo("RSI: {}\tHighest: {}\tLowest: {}\t52 week high: {}\t"
+                       "52 week low: {}\tSMA10: {}\tSMA21: {}\tSMA50: {}\t"
+                       "SMA200: {}".format(click.style(str(rsi), fg='red'),
+                                           click.style(str(max(close_price_list)), fg='red'),
                                            click.style(str(min(close_price_list)), fg='red'),
                                            click.style(str(rb_client.high_52_weeks), fg='red'),
                                            click.style(str(rb_client.low_52_weeks), fg='red'),
-                                           sma_15, sma_30, sma_60, sma_200))
+                                           sma_10, sma_21, sma_50, sma_200))
             return True
         fluctuate = get_volatility(float(v['2. high']), float(v['3. low']))
         fluctuate_percent = get_volatility_percent(fluctuate, float(v['4. close']))
@@ -133,14 +172,15 @@ def get_stock_info(ticker, name=None, days=None):
         change_percent = get_price_change_percent(change, float(price_data[prev_date]['4. close']))
         vol = int(v['5. volume']) / 1000
         close_price_list.append(float(v['4. close']))
-        click.echo("Date: {}, Open Price: ${}, Close price: ${},"
-                   "High: {}, Low: {}, Fluctuate: ${}, Fluctuate %: {},"
-                   "Change: ${}, Change %: {}, Volume: {} k".
-                   format(k, round(float(v['1. open']), 3),
+        click.echo("{}\t{}\t\t{}\t\t{}\t\t{}\t\t{}\t\t{}\t\t{}\t\t{}\t\t{}"\
+                   .format(k, round(float(v['1. open']), 3),
                           round(float(v['4. close']), 3),
-                          round(float(v['2. high']),3), round(float(v['3. low']),3),
-                          round(fluctuate, 3), round(fluctuate_percent, 2),
-                          round(change, 2), round(change_percent, 2), vol))
+                          round(float(v['2. high']),3),
+                          round(float(v['3. low']),3),
+                          round(fluctuate, 3),
+                          round(fluctuate_percent, 2),
+                          round(change, 2),
+                          round(change_percent, 2), vol))
 
 
 def get_volatility(high, low):
@@ -163,9 +203,30 @@ def get_price_change_percent(change, prev_close):
         change_percent = 9999.99
     return change_percent
 
-def ticker_15_sma(ticker):
-    sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=15&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
-    resp = requests.get(sma_url)
+#def ticker_15_sma(ticker):
+#    sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=15&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
+#    resp = session.get(sma_url)
+#    status = check_success_code(resp)
+#    if status == 'SUCCESS':
+#        if resp.json()['Technical Analysis: SMA']:
+#            last_refresh_date = resp.json()['Meta Data']['3: Last Refreshed']
+#            return resp.json()['Technical Analysis: SMA'][last_refresh_date]['SMA']
+#        else:
+#            return 0
+
+
+def get_rsi(ticker):
+    rsi_url = '{}/query?function=RSI&symbol={}&interval=daily&time_period=14&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
+    resp = session.get(rsi_url)
+    rsi_date = resp.json()['Meta Data']['3: Last Refreshed']
+    rsi_data = resp.json()['Technical Analysis: RSI']
+    rsi = rsi_data[rsi_date]['RSI']
+    return rsi
+
+
+def ticker_10_sma(ticker):
+    sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=10&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
+    resp = session.get(sma_url)
     status = check_success_code(resp)
     if status == 'SUCCESS':
         if resp.json()['Technical Analysis: SMA']:
@@ -174,10 +235,9 @@ def ticker_15_sma(ticker):
         else:
             return 0
 
-
-def ticker_30_sma(ticker):
-    sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=30&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
-    resp = requests.get(sma_url)
+def ticker_21_sma(ticker):
+    sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=21&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
+    resp = session.get(sma_url)
     status = check_success_code(resp)
     if status == 'SUCCESS':
         if resp.json()['Technical Analysis: SMA']:
@@ -186,9 +246,9 @@ def ticker_30_sma(ticker):
         else:
             return 0
 
-def ticker_60_sma(ticker):
-    sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=60&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
-    resp = requests.get(sma_url)
+def ticker_50_sma(ticker):
+    sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=50&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
+    resp = session.get(sma_url)
     status = check_success_code(resp)
     if status == 'SUCCESS':
         if resp.json()['Technical Analysis: SMA']:
@@ -199,7 +259,7 @@ def ticker_60_sma(ticker):
 
 def ticker_200_sma(ticker):
     sma_url = '{}/query?function=SMA&symbol={}&interval=daily&time_period=200&series_type=close&apikey={}'.format(host, ticker, AV_API_KEY)
-    resp = requests.get(sma_url)
+    resp = session.get(sma_url)
     status = check_success_code(resp)
     if status == 'SUCCESS':
         if resp.json()['Technical Analysis: SMA']:
@@ -225,7 +285,6 @@ def _check_status_code(response, content_check=None):
         return 'FAIL'
 
 def check_success_code(response, content_check=None):
-
     return _check_status_code(response, content_check=None)
 
 def main():
