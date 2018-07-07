@@ -4,11 +4,38 @@ import requests
 from Robinhood import Robinhood
 import config
 
-class Equity(object):
-    def __init__(self, ticker):
+# Getting Token for robinhood
+# resp = requests.post('https://api.robinhood.com/api-token-auth/', json={'username':config.USERNAME, 'password':config.PASSWORD})
+# resp.json()
+# resp = requests.get('https://api.robinhood.com/watchlists/', headers={'Authorization': 'Token 3d49f8a975a7401a0616deed73397af728e0a1ed'})
+# resp.status_code
+# resp.json()
+# resp = requests.get('https://api.robinhood.com/watchlists/Default', headers={'Authorization': 'Token 3d49f8a975a7401a0616deed73397af728e0a1ed'})
+# resp.status_code
+# resp.json()
+
+
+#class Login(object):
+#    def __init__(self):
+#        self.my_trader = Robinhood.Robinhood()
+#        self.logged_in = self.my_trader.login(username=config.USERNAME, password=config.PASSWORD)
+
+class Authenticate(object):
+    def __init__(self):
         self.my_trader = Robinhood.Robinhood()
-        self.ticker = ticker
         logged_in = self.my_trader.login(username=config.USERNAME, password=config.PASSWORD)
+
+class Equity(object):
+    def __init__(self, acct, ticker):
+        #self.my_trader = Robinhood.Robinhood()
+        self.ticker = ticker
+        #logged_in = self.my_trader.login(username=config.USERNAME, password=config.PASSWORD)
+        self.my_trader = acct.my_trader
+        try:
+            self.equity_ticker = self.my_trader.symbol(self.ticker)
+        except Robinhood.RH_exception.InvalidTickerSymbol as e:
+            self.equity_ticker = None
+            return self.equity_ticker
         self.equity_info = self.my_trader.fundamentals(self.ticker)
         self.instrument_info = self.my_trader.instruments(self.ticker)
         self.news = self.my_trader.get_news(ticker)
@@ -51,7 +78,10 @@ class Equity(object):
 
     @property
     def company_ipo_date(self):
-        return self.instrument_info[0]['list_date']
+        if self.instrument_info:
+            return self.instrument_info[0]['list_date']
+        else:
+            return "Not Available"
 
     @property
     def company_news(self):

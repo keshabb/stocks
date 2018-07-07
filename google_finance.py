@@ -37,16 +37,14 @@ def get_name_and_symbol(portfolio, days):
     port = "{}.csv".format(PORTFOLIOS[portfolio])
     with open(port, 'r') as csvfile:
         spread_reader = csv.DictReader(csvfile)
-        portfolio_stocks = {}
+        portfolio_stocks = []
         for item in spread_reader:
-            print item
             #print("{}\t{}".format(item['\xef\xbb\xbfName'], item['Symbol']))
-            portfolio_stocks.update({item['Name']: item['\xef\xbb\xbfSymbol']})
+            portfolio_stocks.append(item['Symbol'])
         #print portfolio_stocks
     #for name, ticker in portfolio_stocks.iteritems():
-    for name, ticker in portfolio_stocks.iteritems():
+    for ticker in portfolio_stocks:
         click.echo("\n")
-        click.echo("Name: {}".format(name))
         #click.echo("ticker: {}".format(ticker))
         stocks.get_stock_info(ticker, days)
         click.pause(info="Press any key to continue...", err=False)
