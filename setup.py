@@ -20,7 +20,8 @@ setup(
         'Yahoo-ticker-downloader',
         'lxml',
         'MySQL-python',
-        'pyexcel-xls'
+        'pyexcel-xls',
+        'prettytable'
         ],
     entry_points = {
         'console_scripts': [

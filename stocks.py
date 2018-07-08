@@ -11,6 +11,7 @@ import config
 import etrade_api
 from pandas_finance import Equity
 import get_yahoo_finance as yahoo_info
+from prettytable import PrettyTable
 
 today = date.today()
 AV_API_KEY = config.AV_API_KEY
@@ -102,8 +103,7 @@ def get_stock_info(ticker, name=None, days=None):
     close_price_list = []
     sorted_price_data = collections.OrderedDict(sorted(price_data.items(),
                                                        reverse=True))
-    click.echo("Date\t\tOpen Price ($)\tClose price ($)\tHigh ($)\tLow ($)\t"
-               "\tFluctuate ($)\tFluctuate (%)\tChange ($)\tChange (%)\tVolume(k)")
+    ticker_table = PrettyTable(['Date', 'Open Price', 'Close price', 'High ($)', 'Low ($)', 'Fluctuate ($)', 'Fluctuate (%)', 'Change ($)', 'Change (%)', 'Volume(k)'])
     for k, v in sorted_price_data.items():
         if ':' in k:
             k = datetime.strptime(k, '%Y-%m-%d %H:%M:%S').date()
@@ -116,6 +116,7 @@ def get_stock_info(ticker, name=None, days=None):
             prev_date = get_prev_close_date(k - timedelta(days=1))
         prev_date = datetime.strftime(prev_date, '%Y-%m-%d')
         if k < end_date:
+            click.echo(ticker_table)
             click.echo("Company Founded: {}\t\tCEO: {}\tIPO date: {}\t\t"
                        "Total Employee: {}".format(click.style(str(rb_client.company_founded), fg='red'),
                         rb_client.company_ceo, click.style(rb_client.company_ipo_date, fg='red'),
@@ -172,16 +173,14 @@ def get_stock_info(ticker, name=None, days=None):
         change_percent = get_price_change_percent(change, float(price_data[prev_date]['4. close']))
         vol = int(v['5. volume']) / 1000
         close_price_list.append(float(v['4. close']))
-        click.echo("{}\t{}\t\t{}\t\t{}\t\t{}\t\t{}\t\t{}\t\t{}\t\t{}\t\t{}"\
-                   .format(k, round(float(v['1. open']), 3),
-                          round(float(v['4. close']), 3),
-                          round(float(v['2. high']),3),
-                          round(float(v['3. low']),3),
-                          round(fluctuate, 3),
-                          round(fluctuate_percent, 2),
-                          round(change, 2),
-                          round(change_percent, 2), vol))
-
+        ticker_table.add_row([k, round(float(v['1. open']), 3),
+                              round(float(v['4. close']), 3),
+                              round(float(v['2. high']),3),
+                              round(float(v['3. low']),3),
+                              round(fluctuate, 3),
+                              round(fluctuate_percent, 2),
+                              round(change, 2),
+                              round(change_percent, 2), vol])
 
 def get_volatility(high, low):
     return high - low
