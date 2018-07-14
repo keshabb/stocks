@@ -68,6 +68,7 @@ def stock_info(ticker, days):
 
 def get_stock_info(ticker, name=None, days=None):
     """ Returns ticker info """
+    ticker = ticker.upper()
     yahoo_ticker_obj = Equity(ticker)
     ticker_obj = etrade_api.Equity(etrade_acct_obj, ticker)
     if ticker_obj.quote_all is None:
