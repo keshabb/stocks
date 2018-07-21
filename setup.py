@@ -15,6 +15,7 @@ setup(
         'gdata',
         'pandas',
         'Quandl',
+        'pyetrade',
         'jinja2',
         'pandas-finance',
         'Yahoo-ticker-downloader',
