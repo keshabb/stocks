@@ -12,6 +12,7 @@ import etrade_api
 from pandas_finance import Equity
 import get_yahoo_finance as yahoo_info
 from prettytable import PrettyTable
+import multiprocessing
 
 today = date.today()
 AV_API_KEY = config.AV_API_KEY
@@ -81,9 +82,21 @@ def get_stock_info(ticker, name=None, days=None):
     trade_date, end_date = get_end_date(days)
     trade_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
     sma_10 = ticker_10_sma(ticker)
+    #sma_10_p1 = multiprocessing.Process(target=ticker_10_sma, args=(ticker,))
+    #sma_10 = sma_10_p1.start()
+    #sma_10_p1.join()
     sma_21 = ticker_21_sma(ticker)
+    #sma_21_p1 = multiprocessing.Process(target=ticker_21_sma, args=(ticker,))
+    #sma_21 = sma_21_p1.start()
+    #sma_21_p1.join()
     sma_50 = ticker_50_sma(ticker)
+    #sma_50_p1 = multiprocessing.Process(target=ticker_50_sma, args=(ticker,))
+    #sma_50 = sma_50_p1.start()
+    #sma_50_p1.join()
     sma_200 = ticker_200_sma(ticker)
+    #sma_200_p1 = multiprocessing.Process(target=ticker_200_sma, args=(ticker,))
+    #sma_200 = sma_200_p1.start()
+    #sma_200_p1.join()
     rsi = get_rsi(ticker)
     url = '{}/query?function=TIME_SERIES_DAILY&symbol={}&apikey={}'.\
           format(host, ticker, AV_API_KEY)
